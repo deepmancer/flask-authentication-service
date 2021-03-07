@@ -1,5 +1,4 @@
-from flask import Flask, redirect, url_for, request, jsonify
-import json
+from flask import Flask, request, jsonify
 from Model import ServerController
 import asyncio
 
@@ -35,15 +34,13 @@ def checkTokenExpired():
     if request.method == 'POST':
         data = request.get_json()
         responseData = asyncio.run(ServerController.isTokenExpired(data["token"]))
-        return jsonify(responseData)
+        finalResponse = str(responseData)
+        return jsonify({"isExpired": finalResponse})
 
 
 async def runServer():
-    print("1")
-    await ServerController.runDatabase("../DataAccess/DB/")
-    print("2")
-    await app.run(host="localhost", port=9000, debug=False)
-    print(3)
+    await ServerController.runDatabase()
+    await app.run(host="localhost", port=9999, debug=False)
 
 
 if __name__ == '__main__':

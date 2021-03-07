@@ -1,195 +1,111 @@
-import sqlite3
 import asyncio
-import jwt
-from datetime import *
-import time
+import sys
+from pymongo import MongoClient
+import srvlookup
+from mongoengine import *
+import dns.resolver
 
-usersDb = None
-loginsLogDb = None
+database = None
 
 
 # ************* create user and login database and tables *************
 
-
-async def openUsersDatabase(path):
-    userConnection = sqlite3.connect(path + 'users.db', check_same_thread=False)
-    print("Opened  users database successfully")
-    return userConnection
-
-
-async def openLoginsLogDatabase(path):
-    loginConnection = sqlite3.connect(path + 'loginsLog.db', check_same_thread=False)
-    print("Opened logins log database successfully")
-    return loginConnection
+class LoginLog(Document):
+    loginsCount = IntField(required=True)
+    userId = StringField(required=True)
+    token = StringField(required=True)
+    meta = {'collection': 'loginLogs'}
 
 
-async def createLoginsLogTable():
+class RegisterLog(Document):
+    userId = StringField(required=True)
+    password = StringField(required=True)
+    meta = {'collection': 'users'}
+
+
+async def connectToDatabases():
+    return connect('database',
+                   host='mongodb+srv://client:password1379@cluster0.pcb8q.mongodb.net/database?retryWrites=true&w'
+                        '=majority')
+
+
+async def printLoginsLogCollection():
     try:
-
-        asyncio.run(loginsLogDb.execute('''CREATE TABLE loginsLogTable
-                   (loginCount INT PRIMARY KEY  NOT NULL,
-                   id          TEXT             NOT NULL,
-                   token       TEXT             NOT NULL);'''))
-        print("logins log table created")
-    except:
-        print("logins log table already exists")
-
-
-async def createUsersTable():
-    try:
-        asyncio.run(usersDb.execute('''CREATE TABLE  usersTable
-                (id         TEXT PRIMARY KEY  NOT NULL,
-                password    TEXT              NOT NULL);'''))
-        print("users table created")
-    except Exception as e:
-        print("users table already exists")
-
-
-async def printLoginsLogTable():
-    try:
-        cursor = loginsLogDb.cursor()
-        table = cursor.execute("SELECT * FROM loginsLogTable").fetchall()
-        print({"logins log table": table})
+        print("********** logins log collection **********\n")
+        for loginLogObject in LoginLog.objects:
+            print(
+                "loginsCount: " + str(loginLogObject.loginsCount) + " | userId: " + loginLogObject.userId + " | token: "
+                + loginLogObject.token + " \n")
 
     except:
-        print("can not print logins log table")
+        print("can not print logins log collection")
 
 
-async def printUsersTable():
+async def printUsersCollection():
     try:
-        cursor = usersDb.cursor()
-        table = cursor.execute("SELECT * FROM usersTable").fetchall()
-        print({"users table": table})
+        print("********** users collection **********")
+        for registerObject in RegisterLog.objects:
+            print("userId: " + registerObject.userId + " | password: " + str(registerObject.password) + "\n")
+
     except:
-        print("can not print users table")
+        print("can not print users collection")
 
 
 # ************* logins functions *************
 
 
 async def submitLogin(userId, token):
-    allIds = (loginsLogDb.execute('SELECT id from loginsLogTable WHERE 1 = 1')).fetchall()
-    primaryKey = len(allIds) + 1
-    values = (primaryKey, userId, token)
-    loginsLogDb.execute(''' INSERT INTO loginsLogTable(loginCount,id,token) VALUES(?,?,?) ''', values)
+    loginsCount = len(LoginLog.objects)
+    primaryKey = loginsCount + 1
+    loginLog = LoginLog(loginsCount=primaryKey, userId=userId, token=token).save()
     print("login submitted")
-    loginsLogDb.commit()
 
 
-def isTokenExpired(token):
+async def getUserLastToken(id):
     try:
-        jwt.decode(token, "secret", algorithms=["HS256"])
-        return "False"
-    except Exception as e:
-        return "True"
-
-
-def getNewToken(id):
-    currentTime = datetime.utcnow()
-    deltaTime = timedelta(hours=1)
-    expirationTime = currentTime + deltaTime
-    token = jwt.encode({"exp": expirationTime, "id": id}, "secret")
-    return token
-
-
-async def getToken(id):
-    token = None
-    usersTokens = loginsLogDb.execute('SELECT token FROM loginsLogTable WHERE id = ?', (id,)).fetchall()
-
-    for userTokenTuple in usersTokens:
-        userToken = userTokenTuple[0]
-        if isTokenExpired(userToken) == "False":
-            token = userToken
-            break
-
-    if token is not None:
-        return token
-
-    token = getNewToken(id)
-    return token
+        userTokens = (LoginLog.objects(userId=id))
+        userLastToken = userTokens[len(userTokens) - 1].token
+        return userLastToken
+    except:
+        return None
 
 
 async def getUserIdWithToken(token):
-    userId = 0
     try:
-        userId = loginsLogDb.execute('SELECT id FROM loginsLogTable WHERE token = ?', (token,)).fetchone()[0]
-    except:
-        userId = None
-    finally:
+        userId = LoginLog.objects(token=token)[0].userId
         return userId
+    except:
+        return None
 
 
 # ************* user password stuff *************
 
 
 async def getPasswordForThisId(id):
-    encryptedPassword = ""
     try:
-        encryptedPassword = usersDb.execute('SELECT password FROM usersTable WHERE id = ?', (id,)).fetchone()[0]
-    except Exception as e:
-        encryptedPassword = None
-    finally:
+        encryptedPassword = RegisterLog.objects(userId=id)[0].password
         return encryptedPassword
+    except:
+        return None
+
+
+async def isThisTokenAvailable(token):
+    try:
+        if len(LoginLog.objects(token=token)) != 0:
+            return True
+        return False
+    except:
+        return False
+
+
+async def isThereUserWithId(id):
+    try:
+        user = RegisterLog.objects(userId=id)[0]
+        return True
+    except:
+        return False
 
 
 async def registerUser(id, password):
-    values = (id, password)
-    usersDb.execute(''' INSERT INTO usersTable(id,password) VALUES(?,?) ''', values)
-    usersDb.commit()
+    user = RegisterLog(userId=id, password=password).save()
 
-
-# if __name__ == "__main__":
-#     usersDb = asyncio.run(openUsersDatabase("DB/"))
-#     loginsLogDb = asyncio.run(openLoginsLogDatabase("DB/"))
-#     #     #
-#     asyncio.run(createLoginsLogTable())
-    #     asyncio.run(createUsersTable())
-    #     # asyncio.run(createLoginsLogTable())
-    #     #
-    #     values = ("ds", "heidari")
-    #     usersDb.execute('''INSERT INTO usersTable (id,password) VALUES (?,?)''', values)
-    #     usersDb.commit()
-    #     asyncio.run(printUsersTable())
-    #
-    # token1 = asyncio.run(getToken("alireza"))
-    # print(isTokenExpired(token1))
-    # asyncio.run(submitLogin("alireza", token1))
-    # time.sleep(1)
-    # print(isTokenExpired(token1))
-    # time.sleep(2.1)
-    # print(isTokenExpired(token1))
-    #
-    # #     # asyncio.run(submitLogin("alireza", token1))
-    # token2 = asyncio.run(getToken("alireza"))
-    # asyncio.run(submitLogin("alireza", token2))
-    # print(token1)
-    # print(token2)
-    # asyncio.run(printLoginsLogTable())
-#     # asyncio.run(submitLogin("heidari", token2))
-#     #
-#     # time.sleep(2)
-#     #
-#     # token1 = asyncio.run(getToken("alireza"))
-#     # asyncio.run(submitLogin("alireza", token1))
-#     # token2 = asyncio.run(getToken("heidari"))
-#     # asyncio.run(submitLogin("heidari", token2))
-#     # time.sleep(4)
-#     #
-#     # token1 = asyncio.run(getToken("alireza"))
-#     # asyncio.run(submitLogin("alireza", token1))
-#     # token2 = asyncio.run(getToken("heidari"))
-#     # asyncio.run(submitLogin("heidari", token2))
-#     #
-#     # # asyncio.run((submitLogin("asdf", "heidari")))
-#     # # asyncio.run((submitLogin("doa", "abadi")))
-#     #
-#     # # tokenn = getNewToken("3");
-#     # # print(isTokenExpired(tokenn))
-#     # # time.sleep(3)
-#     # # print(isTokenExpired(tokenn))
-#     #
-#     # # userI2d = asyncio.run(getUserIdWithToken("abadi"))
-#     # # print(userI2d)
-#     #
-#     # asyncio.run(printLoginsLogTable())
-#     print("hello")
