@@ -7,11 +7,11 @@ from datetime import *
 async def loginUser(id, password):
     isThisUserExists = await SqliteDatabase.isThereUserWithId(id)
     if isThisUserExists is False:
-        return {"message": "no users with this id"}
+        return {"message": "no users with this id", "token": None}
 
     isPasswordCorrect = await isPasswordCorrectForId(id, password)
     if isPasswordCorrect is False:
-        return {"message": "password is wrong"}
+        return {"message": "password is wrong", "token": None}
     token = await getToken(id)
     await SqliteDatabase.submitLogin(id, token)
     return {"message": "login successful", "token": token}
@@ -77,4 +77,3 @@ def getNewToken(id):
     expirationTime = currentTime + deltaTime
     token = jwt.encode({"exp": expirationTime, "id": id}, "secret")
     return str(token)
-

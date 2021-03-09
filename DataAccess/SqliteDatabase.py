@@ -63,8 +63,8 @@ async def submitLogin(userId, token):
 
 async def getUserLastToken(id):
     try:
-        userTokens = (LoginLog.objects(userId=id))
-        userLastToken = userTokens[len(userTokens) - 1].token
+        userLogs = (LoginLog.objects(userId=id))
+        userLastToken = userLogs[len(userLogs) - 1].token
         return userLastToken
     except:
         return None
@@ -108,4 +108,3 @@ async def isThereUserWithId(id):
 
 async def registerUser(id, password):
     user = RegisterLog(userId=id, password=password).save()
-
