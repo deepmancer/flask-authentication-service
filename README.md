@@ -1,2 +1,2 @@
-This authentication service offers apis for users to login and register and works with token. you can use it for every project implemented in every language by just using those apis.
-passwords are not saved directly in the database and they are hashed.
+This authentication service offers APIs for users to login and register and gives them a token with a expiration time.
+You can use it for every project implemented in every language by just using given APIs.
