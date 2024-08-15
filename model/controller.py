@@ -1,79 +1,64 @@
 from data_access import database
 from Crypto.Hash import SHA256
 import jwt
-from datetime import *
+from datetime import datetime, timedelta
 
+SECRET_KEY = "secret"
 
-async def loginUser(id, password):
-    isThisUserExists = await database.isThereUserWithId(id)
-    if isThisUserExists is False:
-        return {"message": "no users with this id", "token": None}
+async def login_user(user_id, password):
+    user_exists = await database.does_user_exist(user_id)
+    if not user_exists:
+        return {"message": "No user with this ID", "token": None}
 
-    isPasswordCorrect = await isPasswordCorrectForId(id, password)
-    if isPasswordCorrect is False:
-        return {"message": "password is wrong", "token": None}
-    token = await getToken(id)
-    await database.submitLogin(id, token)
-    return {"message": "login successful", "token": token}
+    if not await is_password_correct(user_id, password):
+        return {"message": "Incorrect password", "token": None}
 
+    token = await get_or_create_token(user_id)
+    await database.record_login(user_id, token)
+    return {"message": "Login successful", "token": token}
 
-async def isPasswordCorrectForId(id, password):
-    encryptedPassword = await database.getPasswordForThisId(id)
-    if encryptedPassword != encryptPassword(id, password):
-        return False
-    return True
+async def is_password_correct(user_id, password):
+    stored_password = await database.get_password(user_id)
+    return stored_password == encrypt_password(user_id, password)
 
-
-async def isTokenExpired(token):
+async def is_token_expired(token):
     try:
-        jwt.decode(token, "secret", algorithms=["HS256"])
-        if await database.isThisTokenAvailable(token) is True:
-            return False
+        jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return not await database.is_token_valid(token)
+    except jwt.ExpiredSignatureError:
         return True
-    except Exception as e:
+    except jwt.InvalidTokenError:
         return True
 
+async def register_user(user_id, password):
+    if await database.does_user_exist(user_id):
+        return {"message": "User already exists"}
 
-async def registerUser(id, password):
-    isThisUserExists = await database.isThereUserWithId(id)
-    if isThisUserExists is True:
-        return {"message": "you can not register"}
+    encrypted_password = encrypt_password(user_id, password)
+    await database.register_user(user_id, encrypted_password)
+    return {"message": "Registration successful"}
 
-    encryptedPassword = encryptPassword(id, password)
-    await database.registerUser(id, encryptedPassword)
-    return {"message": "register successful"}
-
-
-def encryptPassword(id, password):
-    hash = SHA256.new(id.encode('utf-8'))
+def encrypt_password(user_id, password):
+    hash = SHA256.new(user_id.encode('utf-8'))
     hash.update(password.encode('utf-8'))
-    return str(hash.digest())
+    return hash.hexdigest()
 
+async def get_user_id_with_token(token):
+    user_id = await database.get_user_id_by_token(token)
+    return {"id": user_id}
 
-async def getUserIdWithToken(token):
-    userId = await database.getUserIdWithToken(token)
-    return {"id": userId}
+async def initialize_database():
+    await database.connect()
+    print("Connected to MongoDB")
+    await database.print_users_collection()
+    await database.print_logins_collection()
 
+async def get_or_create_token(user_id):
+    last_token = await database.get_last_token(user_id)
+    if last_token and not await is_token_expired(last_token):
+        return last_token
+    return generate_token(user_id)
 
-async def runDatabase():
-    database.database = await database.connectToDatabases()
-    print("connected to mongodb database")
-    await database.printUsersCollection()
-    await database.printLoginsLogCollection()
-
-
-async def getToken(id):
-    userLastToken = await database.getUserLastToken(id)
-    if await isTokenExpired(userLastToken) is False:
-        return userLastToken
-
-    token = getNewToken(id)
-    return token
-
-
-def getNewToken(id):
-    currentTime = datetime.utcnow()
-    deltaTime = timedelta(hours=10)
-    expirationTime = currentTime + deltaTime
-    token = jwt.encode({"exp": expirationTime, "id": id}, "secret")
-    return str(token)
+def generate_token(user_id):
+    expiration_time = datetime.utcnow() + timedelta(hours=10)
+    return jwt.encode({"exp": expiration_time, "id": user_id}, SECRET_KEY, algorithm="HS256")
