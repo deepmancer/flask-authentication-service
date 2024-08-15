@@ -1,0 +1,6 @@
+Flask==2.3.4
+Flask-Async==0.1.0
+pymongo==4.5.0
+mongoengine==0.24.0
+pycryptodome==3.16.0
+python-jose==3.3.0
