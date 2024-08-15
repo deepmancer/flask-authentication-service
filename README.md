@@ -34,14 +34,19 @@ Ensure you have the following:
     ```bash
     cd flask-authentication-service
     ```
+3. **Install Dependencies:**
 
-3. **Start the Server:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4. **Start the Server:**
 
     ```bash
     python server.py
     ```
 
-4. **Access the Service:**
+5. **Access the Service:**
    Your authentication service will be available at `localhost:9999` (port is customizable).
 
 ### 📡 API Endpoints
