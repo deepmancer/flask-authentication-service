@@ -21,21 +21,21 @@ This is a basic authentication service built with Flask to provide a foundation 
 **Running the Service:**
 1. Clone Clone this repository:
 
-  ```bash
-  git clone https://github.com/your-username/flask-authentication-service.git
-  ```
+```bash
+git clone https://github.com/your-username/flask-authentication-service.git
+```
 
 2. Navigate to the project directory:
 
-  ```bash
-  cd flask-authentication-service
-  ```
+```bash
+cd flask-authentication-service
+```
 
 3. Start the server:
 
-   ```bash
-   python server.py
-   ```
+```bash
+python server.py
+```
 
 4. Your authentication service will be running on `localhost:9999` (port can be customized).
 
