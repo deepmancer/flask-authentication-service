@@ -61,18 +61,3 @@ curl -X POST -H "Content-Type: application/json" -d '{"id": "your_user_id", "pas
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{"id": "new_user_id", "password": "new_user_password"}' http://localhost:9999/register
 ```
-
-**Contribution**
-
-We welcome your contributions to this project! Feel free to submit pull requests with improvements or bug fixes.
-
-**License**
-
-This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
-
-**Icons Used:**
-
--   : Symbolizes the service's ability to empower your projects.
--   : Represents secure user authentication.
--   : Indicates language independence.
--   : Depicts secure token management.
