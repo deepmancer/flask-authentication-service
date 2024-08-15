@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from Model import ServerController
+from model import controller
 import asyncio
 
 app = Flask(__name__)
@@ -9,7 +9,7 @@ app = Flask(__name__)
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        responseData = asyncio.run(ServerController.loginUser(data["id"], data["password"]))
+        responseData = asyncio.run(controller.loginUser(data["id"], data["password"]))
         return jsonify(responseData)
 
 
@@ -17,7 +17,7 @@ def login():
 def register():
     if request.method == 'POST':
         data = request.get_json()
-        responseData = asyncio.run(ServerController.registerUser(data["id"], data["password"]))
+        responseData = asyncio.run(controller.registerUser(data["id"], data["password"]))
         return jsonify(responseData)
 
 
@@ -25,7 +25,7 @@ def register():
 def getId():
     if request.method == 'POST':
         data = request.get_json()
-        responseData = asyncio.run(ServerController.getUserIdWithToken(data["token"]))
+        responseData = asyncio.run(controller.getUserIdWithToken(data["token"]))
         return jsonify(responseData)
 
 
@@ -33,13 +33,13 @@ def getId():
 def checkTokenExpired():
     if request.method == 'POST':
         data = request.get_json()
-        responseData = asyncio.run(ServerController.isTokenExpired(data["token"]))
+        responseData = asyncio.run(controller.isTokenExpired(data["token"]))
         finalResponse = str(responseData)
         return jsonify({"isExpired": finalResponse})
 
 
 async def runServer():
-    await ServerController.runDatabase()
+    await controller.runDatabase()
     await app.run(host="localhost", port=9999, debug=False)
 
 
