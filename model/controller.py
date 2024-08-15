@@ -1,11 +1,11 @@
-from DataAccess import SqliteDatabase
+from data_access import database
 from Crypto.Hash import SHA256
 import jwt
 from datetime import *
 
 
 async def loginUser(id, password):
-    isThisUserExists = await SqliteDatabase.isThereUserWithId(id)
+    isThisUserExists = await database.isThereUserWithId(id)
     if isThisUserExists is False:
         return {"message": "no users with this id", "token": None}
 
@@ -13,12 +13,12 @@ async def loginUser(id, password):
     if isPasswordCorrect is False:
         return {"message": "password is wrong", "token": None}
     token = await getToken(id)
-    await SqliteDatabase.submitLogin(id, token)
+    await database.submitLogin(id, token)
     return {"message": "login successful", "token": token}
 
 
 async def isPasswordCorrectForId(id, password):
-    encryptedPassword = await SqliteDatabase.getPasswordForThisId(id)
+    encryptedPassword = await database.getPasswordForThisId(id)
     if encryptedPassword != encryptPassword(id, password):
         return False
     return True
@@ -27,7 +27,7 @@ async def isPasswordCorrectForId(id, password):
 async def isTokenExpired(token):
     try:
         jwt.decode(token, "secret", algorithms=["HS256"])
-        if await SqliteDatabase.isThisTokenAvailable(token) is True:
+        if await database.isThisTokenAvailable(token) is True:
             return False
         return True
     except Exception as e:
@@ -35,12 +35,12 @@ async def isTokenExpired(token):
 
 
 async def registerUser(id, password):
-    isThisUserExists = await SqliteDatabase.isThereUserWithId(id)
+    isThisUserExists = await database.isThereUserWithId(id)
     if isThisUserExists is True:
         return {"message": "you can not register"}
 
     encryptedPassword = encryptPassword(id, password)
-    await SqliteDatabase.registerUser(id, encryptedPassword)
+    await database.registerUser(id, encryptedPassword)
     return {"message": "register successful"}
 
 
@@ -51,19 +51,19 @@ def encryptPassword(id, password):
 
 
 async def getUserIdWithToken(token):
-    userId = await SqliteDatabase.getUserIdWithToken(token)
+    userId = await database.getUserIdWithToken(token)
     return {"id": userId}
 
 
 async def runDatabase():
-    SqliteDatabase.database = await SqliteDatabase.connectToDatabases()
+    database.database = await database.connectToDatabases()
     print("connected to mongodb database")
-    await SqliteDatabase.printUsersCollection()
-    await SqliteDatabase.printLoginsLogCollection()
+    await database.printUsersCollection()
+    await database.printLoginsLogCollection()
 
 
 async def getToken(id):
-    userLastToken = await SqliteDatabase.getUserLastToken(id)
+    userLastToken = await database.getUserLastToken(id)
     if await isTokenExpired(userLastToken) is False:
         return userLastToken
 
