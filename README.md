@@ -1,5 +1,11 @@
 # 🚀 Simple Flask Authentication Service
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Flask-000000.svg?style=for-the-badge&logo=Flask&logoColor=white" alt="Flask">
+  <img src="https://img.shields.io/badge/MongoDB-47A248.svg?style=for-the-badge&logo=MongoDB&logoColor=white" alt="MongoDB">
+  <img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" alt="Python">
+</p>
+
 Welcome to your new go-to Flask-based authentication service! This streamlined solution offers a robust foundation for mastering authentication essentials. With built-in features like user login, registration, token management, and MongoDB integration, it’s designed to be user-friendly and versatile.
 
 ### 🌟 Key Features
