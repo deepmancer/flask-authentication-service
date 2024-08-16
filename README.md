@@ -8,6 +8,8 @@
 
 Welcome to your new go-to Flask-based authentication service! This streamlined solution offers a robust foundation for mastering authentication essentials. With built-in features like user login, registration, token management, and MongoDB integration, it’s designed to be user-friendly and versatile.
 
+---
+
 ### 🌟 Key Features
 
 - **🔐 User Login:** Securely authenticate users with password verification.
